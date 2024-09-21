@@ -1,4 +1,4 @@
-import cv2,random,time
+import cv2,random,time,os,psutil
 import mediapipe as mp
 from scipy.spatial import distance as dist
 
@@ -8,7 +8,7 @@ mp_draw = mp.solutions.drawing_utils
 hands = mp_hand.Hands(max_num_hands=6)
 
 
-ball_radius,gravity,num_balls = 27 , 0.9 , 25
+ball_radius,gravity,num_balls = 27 , 0.8 , 50
 
 
 def get_finger_positions(hand_landmarks):
@@ -82,7 +82,14 @@ def get_hand(hand_landmarks, frame_width, frame_height):
             y_max = y
     return x_min, y_min, x_max, y_max
 
-
+def kill_vscode():
+    for proc in psutil.process_iter(['uid','name']):
+        try:
+            if 'code' in proc['info'].lower():
+                time.sleep(10)
+                proc.terminate()
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
 balls = [
     {
         'x': random.randint(ball_radius, 640 - ball_radius),
@@ -105,7 +112,7 @@ while True:
     current_time = time.time()
     fps = 1 / (current_time - prev_time)
     prev_time = current_time
-    cv2.putText(frame, f'FPS: {int(fps)}',(480,480),cv2.QT_FONT_NORMAL,1, (255,255,255), 1)
+    cv2.putText(frame, f'FPS: {int(fps)}',(500,480),cv2.QT_FONT_NORMAL,1, (255,255,255), 1)
 
     frame_height, frame_width, _ = frame.shape
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -126,6 +133,7 @@ while True:
 
             if detect_rock_gesture(get_finger_positions(hand_landmarks)):
                 cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (255, 255, 0), 3)
+                kill_vscode()
 
             if detect_pointing_gesture(get_finger_positions(hand_landmarks)):
                 cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (255, 0, 0), 3)
